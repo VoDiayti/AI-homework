@@ -10,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.Console;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JFrame;
@@ -23,6 +24,7 @@ public class giaodien {
 	private int col = 20;
 	public XOButton[][] Buttons  = new XOButton[col][row];
 	private ArrayList<Point> availablesPoint = new ArrayList<Point>();
+	private static final int winScore = 100000000;
 	
 	
 	JPanel p = new JPanel();
@@ -107,24 +109,38 @@ public class giaodien {
 	}
 	
 	
+	
 	private void handleClickButton(Point point) {
-		boolean isXMove = XOButton.isXMove;
 		
-		displayInConsole();
 		// TODO: CALC LOGIC HERE
 		point.log();
-		if (hasXWon(point, 1)) {
+		if (hasXWon(point, 2)) {
 			System.out.println("OK OK");
-		}; // 
+		};
+		Buttons[point.x][point.y].setState(true);
 		int board[][] = getMatrixBoard();
 		
-		double scoreUser = getScore(board, false, isXMove);
-		double scoreAI = getScore(board, true, isXMove);
+		ArrayList<int[]> board2 = generateMoves(board);
 		
-		System.out.println("SCORE USER: " + scoreUser);
-		System.out.println("SCORE AI: " + scoreAI);
+		
+		Object[] bestMove = minimaxSearchAB(4, board, true, -1, 100000000);
+		
+		int nextMoveX = 0 , nextMoveY = 0;
+		
+		if (bestMove[1] != null && bestMove[2] != null) {
 			
+			nextMoveX = (Integer)bestMove[1];
+			nextMoveY = (Integer)bestMove[2];
+		} else {
+			System.out.println("LOI IIIIII");
+		}
+		Buttons[nextMoveX][nextMoveY].setState(false);
+		displayInConsole();
+	
 	}
+	
+	
+	
 	
 	private void displayInConsole() {
 		for (int i = 0; i < Buttons.length; i++) {
@@ -135,6 +151,189 @@ public class giaodien {
 			}
 			System.out.println();
 		}
+	}
+	private void printBoard(int[][] board) {
+		int lenght = board.length;
+		System.out.println();
+		for (int i = 0; i < lenght; i++)  {
+			for (int j = 0; j < lenght; j++) {
+				System.out.print(String.format("%d ", board[i][j]));
+			}
+			System.out.println();
+		}
+			
+		
+	}
+	private void printMoves(ArrayList<int[]> moves) {
+		System.out.println();
+		for (int[] move: moves) {
+			System.out.println("( " + move[0] + ", " + move[1] + ")");
+		}
+		System.out.println();
+	}
+	
+	public int[][] playNextMove(int[][] board, int[] move, boolean isUserTurn) {
+		int i = move[0], j = move[1];
+		int [][] newBoard = new int[row][col];
+		for (int h = 0; h < row; h++) {
+			for (int k = 0; k < col; k++) {
+				newBoard[h][k] = board[h][k];
+			}
+		}
+		newBoard[i][j] = isUserTurn ? 2 : 1;
+		return newBoard;
+	}
+	
+	public Object[] minimaxSearchAB(int depth, int[][] board, boolean max, double alpha, double beta) {
+		if(depth == 0) {
+			Object[] x = {evaluateBoardForWhite(board, !max), null, null};
+			return x;
+		}
+		
+		
+		ArrayList<int[]> allPossibleMoves = generateMoves(board);
+		
+		if(allPossibleMoves.size() == 0) {
+			
+			Object[] x = {evaluateBoardForWhite(board, !max), null, null};
+			
+			return x;
+		}
+		
+		Object[] bestMove = new Object[3];
+		
+		
+		if(max) {
+			bestMove[0] = -1.0;
+			// Iterate for all possible moves that can be made.
+			for(int[] move : allPossibleMoves) {
+				// Create a temporary board that is equivalent to the current board
+				int[][] dummyBoard = playNextMove(board, move, false);
+				
+				// Call the minimax function for the next depth, to look for a minimum score.
+				Object[] tempMove = minimaxSearchAB(depth-1, dummyBoard, !max, alpha, beta);
+				
+				// Updating alpha
+				if((Double)(tempMove[0]) > alpha) {
+					alpha = (Double)(tempMove[0]);
+				}
+				// Pruning with beta
+				if((Double)(tempMove[0]) >= beta) {
+					return tempMove;
+				}
+				if((Double)tempMove[0] > (Double)bestMove[0]) {
+					bestMove = tempMove;
+					bestMove[1] = move[0];
+					bestMove[2] = move[1];
+				}
+			}
+			
+		}
+		else {
+			bestMove[0] = 100000000.0;
+			bestMove[1] = allPossibleMoves.get(0)[0];
+			bestMove[2] = allPossibleMoves.get(0)[1];
+			for(int[] move : allPossibleMoves) {
+				int[][] dummyBoard = playNextMove(board, move, true);
+				
+				Object[] tempMove = minimaxSearchAB(depth-1, dummyBoard, !max, alpha, beta);
+				
+				// Updating beta
+				if(((Double)tempMove[0]) < beta) {
+					beta = (Double)(tempMove[0]);
+				}
+				// Pruning with alpha
+				if((Double)(tempMove[0]) <= alpha) {
+					return tempMove;
+				}
+				if((Double)tempMove[0] < (Double)bestMove[0]) {
+					bestMove = tempMove;
+					bestMove[1] = move[0];
+					bestMove[2] = move[1];
+				}
+			}
+		}
+		return bestMove;
+	}
+	
+	
+	public double evaluateBoardForWhite(int[][] board, boolean userTurn) {
+		
+		
+		double blackScore = getScore(board, true, userTurn);
+		double whiteScore = getScore(board, false, userTurn);
+		
+		if(blackScore == 0) blackScore = 1.0;
+		
+		return whiteScore / blackScore;
+		
+	}
+	
+	
+	
+	public ArrayList<int[]> generateMoves(int[][] boardMatrix) {
+		ArrayList<int[]> moveList = new ArrayList<int[]>();
+		
+		int boardSize = boardMatrix.length;
+		
+		
+		// Tìm những tất cả những ô trống nhưng có đánh XO liền kề
+		for(int i=0; i<boardSize; i++) {
+			for(int j=0; j<boardSize; j++) {
+				
+				if(boardMatrix[i][j] > 0) continue;
+				
+				if(i > 0) {
+					if(j > 0) {
+						if(boardMatrix[i-1][j-1] > 0 ||
+						   boardMatrix[i][j-1] > 0) {
+							int[] move = {i,j};
+							moveList.add(move);
+							continue;
+						}
+					}
+					if(j < boardSize-1) {
+						if(boardMatrix[i-1][j+1] > 0 ||
+						   boardMatrix[i][j+1] > 0) {
+							int[] move = {i,j};
+							moveList.add(move);
+							continue;
+						}
+					}
+					if(boardMatrix[i-1][j] > 0) {
+						int[] move = {i,j};
+						moveList.add(move);
+						continue;
+					}
+				}
+				if( i < boardSize-1) {
+					if(j > 0) {
+						if(boardMatrix[i+1][j-1] > 0 ||
+						   boardMatrix[i][j-1] > 0) {
+							int[] move = {i,j};
+							moveList.add(move);
+							continue;
+						}
+					}
+					if(j < boardSize-1) {
+						if(boardMatrix[i+1][j+1] > 0 ||
+						   boardMatrix[i][j+1] > 0) {
+							int[] move = {i,j};
+							moveList.add(move);
+							continue;
+						}
+					}
+					if(boardMatrix[i+1][j] > 0) {
+						int[] move = {i,j};
+						moveList.add(move);
+						continue;
+					}
+				}
+				
+			}
+		}
+		return moveList;
+		
 	}
 	
 	
@@ -147,49 +346,49 @@ public class giaodien {
 				evaluateDiagonal(board, forBlack, blacksTurn);
 	}
 	
-	public int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
-			
-			int consecutive = 0;
-			int blocks = 2;
-			int score = 0;
-			
-			for(int i=0; i<boardMatrix.length; i++) {
-				for(int j=0; j<boardMatrix[0].length; j++) {
-					if(boardMatrix[i][j] == (forBlack ? 2 : 1)) {
-						consecutive++;
-					}
-					else if(boardMatrix[i][j] == 0) {
-						if(consecutive > 0) {
-							blocks--;
-							score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
-							consecutive = 0;
-							blocks = 1;
-						}
-						else {
-							blocks = 1;
-						}
-					}
-					else if(consecutive > 0) {
+public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
+		
+		int consecutive = 0;
+		int blocks = 2;
+		int score = 0;
+		
+		for(int i=0; i<boardMatrix.length; i++) {
+			for(int j=0; j<boardMatrix[0].length; j++) {
+				if(boardMatrix[i][j] == (forBlack ? 2 : 1)) {
+					consecutive++;
+				}
+				else if(boardMatrix[i][j] == 0) {
+					if(consecutive > 0) {
+						blocks--;
 						score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
 						consecutive = 0;
-						blocks = 2;
+						blocks = 1;
 					}
 					else {
-						blocks = 2;
+						blocks = 1;
 					}
 				}
-				if(consecutive > 0) {
+				else if(consecutive > 0) {
 					score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
-					
+					consecutive = 0;
+					blocks = 2;
 				}
-				consecutive = 0;
-				blocks = 2;
+				else {
+					blocks = 2;
+				}
+			}
+			if(consecutive > 0) {
+				score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
 				
 			}
+			consecutive = 0;
+			blocks = 2;
+			
+		}
 		return score;
 	}
 	
-	public  int evaluateVertical(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
+	public static  int evaluateVertical(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
 		
 		int consecutive = 0;
 		int blocks = 2;
@@ -230,7 +429,7 @@ public class giaodien {
 		}
 		return score;
 	}
-	public  int evaluateDiagonal(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
+	public static  int evaluateDiagonal(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
 		
 		int consecutive = 0;
 		int blocks = 2;
@@ -313,13 +512,12 @@ public class giaodien {
 		}
 		return score;
 	}
-	
-	public  int getConsecutiveSetScore(int count, int blocks, boolean currentTurn) {
+	public static  int getConsecutiveSetScore(int count, int blocks, boolean currentTurn) {
 		final int winGuarantee = 1000000;
 		if(blocks == 2 && count < 5) return 0;
 		switch(count) {
 		case 5: {
-			return 100000;
+			return winScore;
 		}
 		case 4: {
 			if(currentTurn) return winGuarantee;
@@ -351,7 +549,7 @@ public class giaodien {
 			return 1;
 		}
 		}
-		return 100000*2;
+		return winScore*2;
 	}
 	
 	// check 1 or 2 won
