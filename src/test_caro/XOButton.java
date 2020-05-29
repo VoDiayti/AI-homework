@@ -8,7 +8,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.SwingConstants;
 
-public class XOButton extends JButton implements ActionListener {
+public class XOButton extends JButton {
 	private ImageIcon X;
 	private ImageIcon O;
 	public Point point;
@@ -23,22 +23,21 @@ public class XOButton extends JButton implements ActionListener {
 		
 		this.point = new Point(x, y);
 		
-		
-		this.addActionListener(this);
+//		addActionListener(this);
 	}
 	
-	@Override
-	public void actionPerformed(ActionEvent e) {
+	public void setState(Boolean isXMove) {
 		if (isXMove) {
 			setIcon(X);
-			isXMove = false;
-			value = 1;
+			value = 2;
+			XOButton.isXMove = false;
 		} else {
 			setIcon(O);
-			isXMove = true;
-			value = 2;
+			value = 1;
+			XOButton.isXMove = true;
 		}
 		
 	}
+	
 	
 }

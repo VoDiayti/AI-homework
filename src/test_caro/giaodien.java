@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import test_caro.CaroActionListener;
 
@@ -114,29 +115,26 @@ public class giaodien {
 		
 		// TODO: CALC LOGIC HERE
 		point.log();
-		if (hasXWon(point, 2)) {
-			System.out.println("OK OK");
-		};
 		Buttons[point.x][point.y].setState(true);
-		int board[][] = getMatrixBoard();
 		
-		ArrayList<int[]> board2 = generateMoves(board);
-		
-		
-		Object[] bestMove = minimaxSearchAB(4, board, true, -1, 100000000);
 		
 		int nextMoveX = 0 , nextMoveY = 0;
+		int [] bestMove = calcNextMove(3);
 		
-		if (bestMove[1] != null && bestMove[2] != null) {
-			
-			nextMoveX = (Integer)bestMove[1];
-			nextMoveY = (Integer)bestMove[2];
-		} else {
-			System.out.println("LOI IIIIII");
+		if (bestMove != null) {
+			nextMoveX = bestMove[0];
+			nextMoveY = bestMove[1];
 		}
+		
 		Buttons[nextMoveX][nextMoveY].setState(false);
 		displayInConsole();
-	
+		if (getScore(getMatrixBoard(), true, false) >= winScore) {
+			JOptionPane.showConfirmDialog(null, "Player X Win");
+			return;
+		}
+		if (getScore(getMatrixBoard(), false, true) >= winScore) {
+			JOptionPane.showConfirmDialog(null, "Player 0(AI) Win");
+		}
 	}
 	
 	
@@ -172,6 +170,29 @@ public class giaodien {
 		System.out.println();
 	}
 	
+	public int[] calcNextMove(int depth) {
+		int[][] board = getMatrixBoard();
+		Object[] bestMove = searchWinningMove(board); 
+		
+		int[] move = new int[2];
+		
+		if(bestMove[1] != null && bestMove[2] != null && XOButton.isXMove) {
+			
+			move[0] = (Integer)(bestMove[1]);
+			move[1] = (Integer)(bestMove[2]);
+			
+		} else {
+			bestMove = minimaxSearchAB(depth, board, true, -1.0, winScore);
+			if(bestMove[1] == null) {
+				move = null;
+			} else {
+				move[0] = (Integer)(bestMove[1]);
+				move[1] = (Integer)(bestMove[2]);
+			}
+		}
+		return move;
+	}
+	
 	public int[][] playNextMove(int[][] board, int[] move, boolean isUserTurn) {
 		int i = move[0], j = move[1];
 		int [][] newBoard = new int[row][col];
@@ -182,6 +203,25 @@ public class giaodien {
 		}
 		newBoard[i][j] = isUserTurn ? 2 : 1;
 		return newBoard;
+	}
+	
+	private Object[] searchWinningMove(int[][] matrix) {
+		ArrayList<int[]> allPossibleMoves = generateMoves(matrix);
+		System.out.println(allPossibleMoves.size());
+		
+		Object[] winningMove = new Object[3];
+		for(int[] move : allPossibleMoves) {
+			int[][] dummyBoard = playNextMove(matrix, move, false);
+			
+			// If the white player has a winning score in that temporary board, return the move.
+			if(getScore(dummyBoard,false,false) >= winScore) {
+				winningMove[1] = move[0];
+				winningMove[2] = move[1];
+				return winningMove;
+			}
+		}
+		
+		return winningMove;
 	}
 	
 	public Object[] minimaxSearchAB(int depth, int[][] board, boolean max, double alpha, double beta) {
@@ -552,89 +592,6 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 		return winScore*2;
 	}
 	
-	// check 1 or 2 won
-	private boolean hasXWon(Point point, int turnValue) {
-		int nextTurn = turnValue == 1 ? 2 : 1;
-		
-		// chỉ check ma trận bán kinh 5 tính từ điểm trung tâm
-		int x, y;
-		
-		// check đường ngan
-		int startXCounter = 0;
-		x = point.x;
-		
-		
-		for (y = point.findStartXPoint().x; y <= point.findEndXPoint().x; y++) {
-			XOButton button = Buttons[x][y];
-			
-			int valueAtButton = button.value;
-			
-			if (valueAtButton == turnValue) {
-				startXCounter++;
-			} else {
-				startXCounter = 0;
-			}
-			
-			if (startXCounter == 5) {
-				return true;
-			}
-		}
-		// check dường dọc
-		int startYCounter = 0;
-		y = point.y;
-		for (x = point.findStartYPoint().y; x <= point.findEndYPoint().y; x++) {
-			XOButton button = Buttons[x][y];
-			
-			int valueAtButton = button.value;
-			if (valueAtButton == turnValue) {
-				startYCounter++;
-			} else {
-				startYCounter = 0;
-			}
-			
-			if (startYCounter == 5) {
-				return true;
-			}
-		}
-		// check đường chéo trai sang phai
-		x = point.findLeftTopPoint().x;
-		y = point.findLeftTopPoint().y;
-		int diagonalCounter = 0;
-		for (; x <= point.findRightBottomPoint().x && y <= point.findRightBottomPoint().y; x++, y++) {
-			XOButton button = Buttons[x][y];
-			int valueAtButton = button.value;
-			if (valueAtButton == turnValue) {
-				diagonalCounter++;
-			} else {
-				diagonalCounter = 0;
-			}
-			
-			if (diagonalCounter == 5) {
-				return true;
-			}
-		}
-		// check đường chéo phải sang trái
-		x = point.findRightTopPoint().x;
-		y = point.findRightTopPoint().y;
-		diagonalCounter = 0;
-		
-		for (; x >= point.findLeftBottomPoint().x && y <= point.findLeftBottomPoint().y; x--, y++) {
-			XOButton button = Buttons[x][y];
-			int valueAtButton = button.value;
-			if (valueAtButton == turnValue) {
-				diagonalCounter++;
-			} else {
-				diagonalCounter = 0;
-			}
-			
-			if (diagonalCounter == 5) {
-				return true;
-			}
-		}
-		
-		
-		return false;
-	}
 	public int[][] getMatrixBoard() {
 		int matrix[][] = new int[row][col];
 		for (int i = 0; i < Buttons.length; i++) {
