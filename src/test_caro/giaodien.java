@@ -245,19 +245,18 @@ public class giaodien {
 		
 		if(max) {
 			bestMove[0] = -1.0;
-			// Iterate for all possible moves that can be made.
+		
 			for(int[] move : allPossibleMoves) {
-				// Create a temporary board that is equivalent to the current board
+				// Chơi thử với move hiện tại
 				int[][] dummyBoard = playNextMove(board, move, false);
 				
-				// Call the minimax function for the next depth, to look for a minimum score.
 				Object[] tempMove = minimaxSearchAB(depth-1, dummyBoard, !max, alpha, beta);
 				
-				// Updating alpha
+				// Cập nhật alpha
 				if((Double)(tempMove[0]) > alpha) {
 					alpha = (Double)(tempMove[0]);
 				}
-				// Pruning with beta
+				// Cắt tỉa beta
 				if((Double)(tempMove[0]) >= beta) {
 					return tempMove;
 				}
@@ -278,11 +277,11 @@ public class giaodien {
 				
 				Object[] tempMove = minimaxSearchAB(depth-1, dummyBoard, !max, alpha, beta);
 				
-				// Updating beta
+				// Cập nhật beta
 				if(((Double)tempMove[0]) < beta) {
 					beta = (Double)(tempMove[0]);
 				}
-				// Pruning with alpha
+				// Cắt tỉa alpha
 				if((Double)(tempMove[0]) <= alpha) {
 					return tempMove;
 				}
@@ -377,16 +376,15 @@ public class giaodien {
 	}
 	
 	
-	
-	
-	public int getScore(int[][] board, boolean forBlack, boolean blacksTurn) {
+	// Đánh giá bàn cờ dựa trên tổng số điểm hàng ngan, hàng dọc, và 2 đường chéo
+	public int getScore(int[][] board, boolean forX, boolean blacksTurn) {
 		
-		return evaluateHorizontal(board, forBlack, blacksTurn) +
-				evaluateVertical(board, forBlack, blacksTurn) +
-				evaluateDiagonal(board, forBlack, blacksTurn);
+		return evaluateHorizontal(board, forX, blacksTurn) +
+				evaluateVertical(board, forX, blacksTurn) +
+				evaluateDiagonal(board, forX, blacksTurn);
 	}
 	
-public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
+	public static int evaluateHorizontal(int[][] boardMatrix, boolean forX, boolean playersTurn ) {
 		
 		int consecutive = 0;
 		int blocks = 2;
@@ -394,41 +392,52 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 		
 		for(int i=0; i<boardMatrix.length; i++) {
 			for(int j=0; j<boardMatrix[0].length; j++) {
-				if(boardMatrix[i][j] == (forBlack ? 2 : 1)) {
+				
+				if(boardMatrix[i][j] == (forX ? 2 : 1)) {
+					//2. Đếm...
 					consecutive++;
 				}
+				// gặp ô trống
 				else if(boardMatrix[i][j] == 0) {
 					if(consecutive > 0) {
+						// Ra: Ô trống ở cuối sau khi đếm. Giảm block rồi bắt đầu tính điểm sau đó reset lại ban đầu
 						blocks--;
-						score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+						score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 						consecutive = 0;
 						blocks = 1;
 					}
 					else {
+						// 1. Vào reset lại blocks = 1 rồi bắt đầu đếm
 						blocks = 1;
 					}
 				}
+				//gặp quân địch
 				else if(consecutive > 0) {
-					score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+					// 2.Ra:  Ô bị chặn sau khi đếm. Tính điểm sau đó reset lại.
+					score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 					consecutive = 0;
 					blocks = 2;
 				}
 				else {
+					//1. Vào: reset lại blocks = 2 rồi bắt đầu đếm
 					blocks = 2;
 				}
 			}
+			
+			// 3. Ra: nhưng lúc này đang ở cuối. Nếu liên tục thì vẫn tính cho đến hết dòng
 			if(consecutive > 0) {
-				score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+				score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 				
 			}
+			// reset lại để tiếp tục chạy cho dòng tiếp theo
 			consecutive = 0;
 			blocks = 2;
 			
 		}
 		return score;
 	}
-	
-	public static  int evaluateVertical(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
+	// hàm tính toán đường dọc tương tự như đường ngan
+	public static  int evaluateVertical(int[][] boardMatrix, boolean forX, boolean playersTurn ) {
 		
 		int consecutive = 0;
 		int blocks = 2;
@@ -436,13 +445,13 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 		
 		for(int j=0; j<boardMatrix[0].length; j++) {
 			for(int i=0; i<boardMatrix.length; i++) {
-				if(boardMatrix[i][j] == (forBlack ? 2 : 1)) {
+				if(boardMatrix[i][j] == (forX ? 2 : 1)) {
 					consecutive++;
 				}
 				else if(boardMatrix[i][j] == 0) {
 					if(consecutive > 0) {
 						blocks--;
-						score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+						score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 						consecutive = 0;
 						blocks = 1;
 					}
@@ -451,7 +460,7 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 					}
 				}
 				else if(consecutive > 0) {
-					score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+					score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 					consecutive = 0;
 					blocks = 2;
 				}
@@ -460,7 +469,7 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 				}
 			}
 			if(consecutive > 0) {
-				score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+				score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 				
 			}
 			consecutive = 0;
@@ -469,25 +478,26 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 		}
 		return score;
 	}
-	public static  int evaluateDiagonal(int[][] boardMatrix, boolean forBlack, boolean playersTurn ) {
+	// Hàm tính toán 2 đường chéo tương tự như hàng ngan
+	public static  int evaluateDiagonal(int[][] boardMatrix, boolean forX, boolean playersTurn ) {
 		
 		int consecutive = 0;
 		int blocks = 2;
 		int score = 0;
-		// From bottom-left to top-right diagonally
+		// Đường chéo /
 		for (int k = 0; k <= 2 * (boardMatrix.length - 1); k++) {
 		    int iStart = Math.max(0, k - boardMatrix.length + 1);
 		    int iEnd = Math.min(boardMatrix.length - 1, k);
 		    for (int i = iStart; i <= iEnd; ++i) {
 		        int j = k - i;
 		        
-		        if(boardMatrix[i][j] == (forBlack ? 2 : 1)) {
+		        if(boardMatrix[i][j] == (forX ? 2 : 1)) {
 					consecutive++;
 				}
 				else if(boardMatrix[i][j] == 0) {
 					if(consecutive > 0) {
 						blocks--;
-						score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+						score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 						consecutive = 0;
 						blocks = 1;
 					}
@@ -496,7 +506,7 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 					}
 				}
 				else if(consecutive > 0) {
-					score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+					score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 					consecutive = 0;
 					blocks = 2;
 				}
@@ -506,26 +516,26 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 		        
 		    }
 		    if(consecutive > 0) {
-				score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+				score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 				
 			}
 			consecutive = 0;
 			blocks = 2;
 		}
-		// From top-left to bottom-right diagonally
+		// Đường chéo \
 		for (int k = 1-boardMatrix.length; k < boardMatrix.length; k++) {
 		    int iStart = Math.max(0, k);
 		    int iEnd = Math.min(boardMatrix.length + k - 1, boardMatrix.length-1);
 		    for (int i = iStart; i <= iEnd; ++i) {
 		        int j = i - k;
 		        
-		        if(boardMatrix[i][j] == (forBlack ? 2 : 1)) {
+		        if(boardMatrix[i][j] == (forX ? 2 : 1)) {
 					consecutive++;
 				}
 				else if(boardMatrix[i][j] == 0) {
 					if(consecutive > 0) {
 						blocks--;
-						score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+						score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 						consecutive = 0;
 						blocks = 1;
 					}
@@ -534,7 +544,7 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 					}
 				}
 				else if(consecutive > 0) {
-					score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+					score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 					consecutive = 0;
 					blocks = 2;
 				}
@@ -544,7 +554,7 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 		        
 		    }
 		    if(consecutive > 0) {
-				score += getConsecutiveSetScore(consecutive, blocks, forBlack == playersTurn);
+				score += getConsecutiveSetScore(consecutive, blocks, forX == playersTurn);
 				
 			}
 			consecutive = 0;
@@ -556,38 +566,45 @@ public static int evaluateHorizontal(int[][] boardMatrix, boolean forBlack, bool
 		final int winGuarantee = 1000000;
 		if(blocks == 2 && count < 5) return 0;
 		switch(count) {
-		case 5: {
-			return winScore;
-		}
-		case 4: {
-			if(currentTurn) return winGuarantee;
-			else {
-				if(blocks == 0) return winGuarantee/4;
-				else return 200;
+			// Ăn 5 -> Cho điểm cao nhất
+			case 5: {
+				return winScore;
 			}
-		}
-		case 3: {
-			if(blocks == 0) {
-				if(currentTurn) return 50000;
-				else return 200;
+			case 4: {
+				// Đang 4 -> Tuỳ theo lược và bị chặn: winGuarantee, winGuarantee/4, 200
+				if(currentTurn) return winGuarantee;
+				else {
+					if(blocks == 0) return winGuarantee/4;
+					else return 200;
+				}
 			}
-			else {
-				if(currentTurn) return 10;
-				else return 5;
+			case 3: {
+				// Đang 3: Block = 0
+				if(blocks == 0) {
+					// Nếu lược của currentTurn thì ăn 3 + 1 = 4 (không bị block) -> 50000 -> Khả năng thắng cao. 
+					// Ngược lại không phải lược của currentTurn thì khả năng bị blocks cao
+					if(currentTurn) return 50000;
+					else return 200;
+				}
+				else {
+					// Block == 1 hoặc Blocks == 2
+					if(currentTurn) return 10;
+					else return 5;
+				}
 			}
-		}
-		case 2: {
-			if(blocks == 0) {
-				if(currentTurn) return 7;
-				else return 5;
+			case 2: {
+				// Tương tự với 2
+				if(blocks == 0) {
+					if(currentTurn) return 7;
+					else return 5;
+				}
+				else {
+					return 3;
+				}
 			}
-			else {
-				return 3;
+			case 1: {
+				return 1;
 			}
-		}
-		case 1: {
-			return 1;
-		}
 		}
 		return winScore*2;
 	}
