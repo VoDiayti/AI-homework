@@ -116,7 +116,10 @@ public class giaodien {
 		// TODO: CALC LOGIC HERE
 		point.log();
 		Buttons[point.x][point.y].setState(true);
-		
+		if (getScore(getMatrixBoard(), true, false) >= winScore) {
+			JOptionPane.showConfirmDialog(null, "Player X Win");
+			return;
+		}
 		
 		int nextMoveX = 0 , nextMoveY = 0;
 		int [] bestMove = calcNextMove(3);
@@ -128,10 +131,7 @@ public class giaodien {
 		
 		Buttons[nextMoveX][nextMoveY].setState(false);
 		displayInConsole();
-		if (getScore(getMatrixBoard(), true, false) >= winScore) {
-			JOptionPane.showConfirmDialog(null, "Player X Win");
-			return;
-		}
+	
 		if (getScore(getMatrixBoard(), false, true) >= winScore) {
 			JOptionPane.showConfirmDialog(null, "Player 0(AI) Win");
 		}
@@ -173,15 +173,25 @@ public class giaodien {
 	public int[] calcNextMove(int depth) {
 		int[][] board = getMatrixBoard();
 		Object[] bestMove = searchWinningMove(board); 
+		Object[] badMove = searchLoseMove(board);
+		
 		
 		int[] move = new int[2];
 		
-		if(bestMove[1] != null && bestMove[2] != null && XOButton.isXMove) {
+		if (badMove[1] != null && badMove[2] != null) {
+			
+			move[0] = (Integer)(badMove[1]);
+			move[1] = (Integer)(badMove[2]);
+			return move;
+		}
+
+		if(bestMove[1] != null && bestMove[2] != null) {
 			
 			move[0] = (Integer)(bestMove[1]);
 			move[1] = (Integer)(bestMove[2]);
 			
 		} else {
+			
 			bestMove = minimaxSearchAB(depth, board, true, -1.0, winScore);
 			if(bestMove[1] == null) {
 				move = null;
@@ -210,6 +220,7 @@ public class giaodien {
 		System.out.println(allPossibleMoves.size());
 		
 		Object[] winningMove = new Object[3];
+	
 		for(int[] move : allPossibleMoves) {
 			int[][] dummyBoard = playNextMove(matrix, move, false);
 			
@@ -223,6 +234,26 @@ public class giaodien {
 		
 		return winningMove;
 	}
+	private Object[] searchLoseMove(int[][] matrix) {
+		ArrayList<int[]> allPossibleMoves = generateMoves(matrix);
+		System.out.println(allPossibleMoves.size());
+		
+		Object[] losingMove = new Object[3];
+	
+		for(int[] move : allPossibleMoves) {
+			int[][] dummyBoard = playNextMove(matrix, move, true);
+			
+			// If the white player has a winning score in that temporary board, return the move.
+			if (getScore(dummyBoard, true, false) >= winScore) {
+				losingMove[1] = move[0];
+				losingMove[2] = move[1];
+				return losingMove;
+			}
+		}
+		
+		return losingMove;
+	}
+
 	
 	public Object[] minimaxSearchAB(int depth, int[][] board, boolean max, double alpha, double beta) {
 		if(depth == 0) {
@@ -564,7 +595,7 @@ public class giaodien {
 	}
 	public static  int getConsecutiveSetScore(int count, int blocks, boolean currentTurn) {
 		final int winGuarantee = 1000000;
-		if(blocks == 2 && count < 5) return 0;
+		if(blocks == 2 && count <= 5) return 0;
 		switch(count) {
 			// Ăn 5 -> Cho điểm cao nhất
 			case 5: {
